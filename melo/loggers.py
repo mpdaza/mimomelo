@@ -7,10 +7,11 @@ logger = logging.getLogger(__name__)
 # log_train = None
 
 def init():
-    global log, log_train
+    global log_general, log_train, log_loss
     log_path =  'logs_personalizados'
-    log = get_logger(log_path)
+    log_general = get_logger(log_path)
     log_train = get_logger('logs/config')
+    log_loss = get_logger('logs/config/logs/')
 
 def get_logger(model_dir, filename="train.log"):
     global logger   
@@ -25,3 +26,4 @@ def get_logger(model_dir, filename="train.log"):
     h.setFormatter(formatter)
     logger.addHandler(h)
     return logger
+

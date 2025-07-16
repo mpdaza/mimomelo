@@ -6,8 +6,10 @@ import whisper
 # OUTPUT_FILE = "data\\example\\metadata.list"
 INPUT_FOLDER = "data/example/wavs"
 OUTPUT_FILE = "data/example/metadata.list"
-LANGUAGE_CODE = "EN"
-LANGUAGE_MODEL = "EN-default"
+# LANGUAGE_CODE = "EN"
+# LANGUAGE_MODEL = "EN-default"
+LANGUAGE_CODE = "ES"
+LANGUAGE_MODEL = "ES"
 
 # Load the whisper model
 model = whisper.load_model("large-v3")

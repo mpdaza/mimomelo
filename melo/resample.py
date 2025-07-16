@@ -42,8 +42,9 @@ def resample_audio(input_folders, output_folder):
 
 if __name__ == "__main__":
     # Lista de carpetas de entrada
-    input_folders = ["data/karen/karen/big_time_1109_librivox", "data/karen/karen/elusive_pimpernel_krs_librivox_64kb_mp3", "data/karen/karen/mansfield_park_1104_librivox"]
-    output_folder = "data/example/wavs"
+    # input_folders = ["data/karen/karen/big_time_1109_librivox", "data/karen/karen/elusive_pimpernel_krs_librivox_64kb_mp3", "data/karen/karen/mansfield_park_1104_librivox"]
+    input_folders = ["data/juan/wav"]
+    output_folder = "data/juan/wavs"
 
     # Validar que las rutas no están vacías
     if not input_folders or not output_folder:

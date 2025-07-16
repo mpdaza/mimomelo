@@ -153,10 +153,13 @@ def clip_grad_value_(parameters, clip_value, norm_type=2):
         clip_value = float(clip_value)
 
     total_norm = 0
+    grads = []
+    # print('ata')
     for p in parameters:
         param_norm = p.grad.data.norm(norm_type)
+        grads.append(p.grad.data)
         total_norm += param_norm.item() ** norm_type
         if clip_value is not None:
             p.grad.data.clamp_(min=-clip_value, max=clip_value)
     total_norm = total_norm ** (1.0 / norm_type)
-    return total_norm
+    return total_norm, grads

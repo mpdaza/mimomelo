@@ -11,7 +11,7 @@ import librosa
 from text import cleaned_text_to_sequence, get_bert
 from text.cleaner import clean_text
 import commons
-import logger
+import loggers
 import logging
 MATPLOTLIB_FLAG = False
 # logger_train = logging.getLogger(__name__)
@@ -22,32 +22,32 @@ MATPLOTLIB_FLAG = False
 def get_text_for_tts_infer(text, language_str, hps, device, symbol_to_id=None):
     norm_text, phone, tone, word2ph = clean_text(text, language_str)
     phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str, symbol_to_id)
-    logger.log.info("phones from t")
-    logger.log.info(phone)
-    logger.log.info("tone from t")
-    logger.log.info(tone)
-    logger.log.info("languages from t")
-    logger.log.info(language)
-    logger.log.info("norm_text from t")
-    logger.log.info(norm_text)
-    logger.log.info("word2ph from t")
-    logger.log.info(word2ph)
+    loggers.log_general.info("phones from t")
+    loggers.log_general.info(phone)
+    loggers.log_general.info("tone from t")
+    loggers.log_general.info(tone)
+    loggers.log_general.info("languages from t")
+    loggers.log_general.info(language)
+    loggers.log_general.info("norm_text from t")
+    loggers.log_general.info(norm_text)
+    loggers.log_general.info("word2ph from t")
+    loggers.log_general.info(word2ph)
     if hps.data.add_blank:
         phone = commons.intersperse(phone, 0)
-        logger.log.info("pepe")
+        loggers.log_general.info("pepe")
         tone = commons.intersperse(tone, 0)
         language = commons.intersperse(language, 0)
 
         for i in range(len(word2ph)):
             word2ph[i] = word2ph[i] * 2
-            # logger.log.info("word2ph[i] * 2")
-            # logger.log.info(word2ph[i])
+            # loggers.log_general.info("word2ph[i] * 2")
+            # loggers.log_general.info(word2ph[i])
         word2ph[0] += 1
 
     if getattr(hps.data, "disable_bert", False):
         bert = torch.zeros(1024, len(phone))
-        logger.log.info('bert')
-        logger.log.info(bert)
+        loggers.log_general.info('bert')
+        loggers.log_general.info(bert)
         ja_bert = torch.zeros(768, len(phone))
     else:
         bert = get_bert(norm_text, word2ph, language_str, device)
@@ -111,11 +111,11 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, skip_optimizer=False
             # For upgrading from the old version
             if "ja_bert_proj" in k:
                 v = torch.zeros_like(v)
-                logger.log_train.warn(
+                loggers.log_train.warn(
                     f"Seems you are using the old version of the model, the {k} is automatically set to zero for backward compatibility"
                 )
             else:
-                logger.log_train.error(f"{k} is not in the checkpoint")
+                loggers.log_train.error(f"{k} is not in the checkpoint")
 
             new_state_dict[k] = v
 
@@ -124,7 +124,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, skip_optimizer=False
     else:
         model.load_state_dict(new_state_dict, strict=False)
 
-    logger.log_train.info(
+    loggers.log_train.info(
         "Loaded checkpoint '{}' (iteration {})".format(checkpoint_path, iteration)
     )
 
@@ -132,7 +132,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, skip_optimizer=False
 
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
-    logger.log_train.info(
+    loggers.log_train.info(
         "Saving model and optimizer state at iteration {} to {}".format(
             iteration, checkpoint_path
         )
@@ -346,7 +346,7 @@ def clean_checkpoints(path_to_models="logs/44k/", n_ckpts_to_keep=2, sort_by_tim
     ]
 
     def del_info(fn):
-        return logger.log_train.info(f".. Free up space by deleting ckpt {fn}")
+        return loggers.log_train.info(f".. Free up space by deleting ckpt {fn}")
 
     def del_routine(x):
         return [os.remove(x), del_info(x)]
@@ -377,7 +377,7 @@ def get_hparams_from_file(config_path):
 def check_git_hash(model_dir):
     source_dir = os.path.dirname(os.path.realpath(__file__))
     if not os.path.exists(os.path.join(source_dir, ".git")):
-        logger.log_train.warn(
+        loggers.log_train.warn(
             "{} is not a git repository, therefore hash value comparison will be ignored.".format(
                 source_dir
             )
@@ -390,7 +390,7 @@ def check_git_hash(model_dir):
     if os.path.exists(path):
         saved_hash = open(path).read()
         if saved_hash != cur_hash:
-            logger.logg_train.warn(
+            loggers.logg_train.warn(
                 "git hash values are different. {}(saved) != {}(current)".format(
                     saved_hash[:8], cur_hash[:8]
                 )

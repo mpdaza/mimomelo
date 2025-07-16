@@ -2,7 +2,7 @@ import pickle
 import os
 import re
 from g2p_en import G2p
-import logger
+import loggers
 
 import text.symbols as symbols
 
@@ -165,7 +165,7 @@ def refine_ph(phn):
     arpaph = []
     tone = 0
     arpaph.append(phn)
-    logger.log.info(arpaph)
+    loggers.log_general.info(arpaph)
     if re.search(r"\d$", phn):
         tone = int(phn[-1]) + 1
         phn = phn[:-1]
@@ -225,8 +225,8 @@ def g2p(text, pad_start_end=True, tokenized=None):
     if tokenized is None:
         tokenized = tokenizer.tokenize(text)
     # import pdb; pdb.set_trace()
-    logger.log.info("Bert-tokens")
-    logger.log.info(tokenized)
+    loggers.log_general.info("Bert-tokens")
+    loggers.log_general.info(tokenized)
     phs = []
     ph_groups = []
     for t in tokenized:
@@ -234,8 +234,8 @@ def g2p(text, pad_start_end=True, tokenized=None):
             ph_groups.append([t])
         else:
             ph_groups[-1].append(t.replace("#", ""))
-    logger.log.info("Group phones")
-    logger.log.info(ph_groups)
+    loggers.log_general.info("Group phones")
+    loggers.log_general.info(ph_groups)
     phones = []
     tones = []
     word2ph = []
@@ -255,8 +255,8 @@ def g2p(text, pad_start_end=True, tokenized=None):
                 else:
                     phoneToneARPA.append(ph)
     
-    logger.log.info('DERRAME')
-    logger.log.info(phoneToneARPA) 
+    loggers.log_general.info('DERRAME')
+    loggers.log_general.info(phoneToneARPA) 
     
     for group in ph_groups:
         w = "".join(group)
@@ -281,12 +281,12 @@ def g2p(text, pad_start_end=True, tokenized=None):
         aaa = distribute_phone(phone_len, word_len)
         word2ph += aaa
     phones = [post_replace_ph(i) for i in phones]
-    logger.log.info("Phones-g2p")
-    logger.log.info(phones)
-    logger.log.info("tones-g2p")
-    logger.log.info(tones)
-    logger.log.info("word2ph-g2p")
-    logger.log.info(word2ph)
+    loggers.log_general.info("Phones-g2p")
+    loggers.log_general.info(phones)
+    loggers.log_general.info("tones-g2p")
+    loggers.log_general.info(tones)
+    loggers.log_general.info("word2ph-g2p")
+    loggers.log_general.info(word2ph)
     if pad_start_end:
         phones = ["_"] + phones + ["_"]
         tones = [0] + tones + [0]

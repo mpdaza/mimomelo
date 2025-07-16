@@ -2,7 +2,7 @@ import math
 import torch
 from torch import nn
 from torch.nn import functional as F
-import logger
+import loggers
 import numpy as np
 
 from melo import commons
@@ -15,7 +15,7 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from melo.commons import init_weights, get_padding
 import melo.monotonic_align as monotonic_align
 
-logger.init()
+loggers.init()
 
 class DurationDiscriminator(nn.Module):  # vits2
     def __init__(
@@ -308,7 +308,7 @@ class DurationPredictor(nn.Module):
         x = self.norm_2(x)
         x = self.drop(x)
         x = self.proj(x * x_mask)
-        logger.log_train.info("INSIDE MODELS.PY")
+        loggers.log_train.info("INSIDE MODELS.PY")
         return x * x_mask
 
 
@@ -941,6 +941,8 @@ class SynthesizerTrn(nn.Module):
         l_length_sdp = l_length_sdp / torch.sum(x_mask)
 
         logw_ = torch.log(w + 1e-6) * x_mask
+        loggers.log_general.info("logw_")
+        loggers.log_general.info(logw_.cpu().numpy().shape)
         logw = self.dp(x, x_mask, g=g)
         l_length_dp = torch.sum((logw - logw_) ** 2, [1, 2]) / torch.sum(
             x_mask
@@ -998,42 +1000,51 @@ class SynthesizerTrn(nn.Module):
         x, m_p, logs_p, x_mask = self.enc_p(
             x, x_lengths, tone, language, bert, ja_bert, g=g_p
         )
-        logger.log.info("x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths, tone, language, bert, ja_bert, g=g_p)")
-        logger.log.info("x")
-        logger.log.info(x.cpu().numpy())
-        np.savetxt("./logs_personalizados/tensor_h_text.csv", x.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor x with sape {x.cpu().numpy().shape} in tensor_h_text.csv")
-        logger.log.info("m_p")
-        logger.log.info(m_p.cpu().numpy())
-        np.savetxt("./logs_personalizados/tensor_m_p.csv", m_p.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor m_p with sape {m_p.cpu().numpy().shape} in tensor_m_p.csv")
-        logger.log.info("logs_p")
-        logger.log.info(logs_p.cpu().numpy())
-        np.savetxt("./logs_personalizados/tensor_log_p.csv", logs_p.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor logs_p with sape {logs_p.cpu().numpy().shape} in tensor_logs_p.csv")
-        logger.log.info("x_mask")
-        logger.log.info(x_mask.cpu().numpy())
+        # loggers.log_general.info("x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths, tone, language, bert, ja_bert, g=g_p)")
+        # loggers.log_general.info("x")
+        # loggers.log_general.info(x.cpu().numpy())
+        # np.savetxt("./logs_personalizados/tensor_h_text_prueba.csv", x.squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor x with sape {x.cpu().numpy().shape} in tensor_h_text.csv")
+        # loggers.log_general.info("m_p")
+        # loggers.log_general.info(m_p.cpu().numpy())
+        # np.savetxt("./logs_personalizados/tensor_m_p_prueba.csv", m_p.squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor m_p with sape {m_p.cpu().numpy().shape} in tensor_m_p.csv")
+        # loggers.log_general.info("logs_p")
+        # loggers.log_general.info(logs_p.cpu().numpy())
+        # np.savetxt("./logs_personalizados/tensor_log_p_prueba.csv", logs_p.squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor logs_p with sape {logs_p.cpu().numpy().shape} in tensor_logs_p.csv")
+        loggers.log_general.info("x_mask")
+        loggers.log_general.info(x_mask.cpu().numpy())
         logw = self.sdp(x, x_mask, g=g, reverse=True, noise_scale=noise_scale_w) * (
             sdp_ratio
         ) + self.dp(x, x_mask, g=g) * (1 - sdp_ratio)
         w = torch.exp(logw) * x_mask * length_scale
-        logger.log.info("Salidas del (sdp_ratio) * sdp + (1-sdp_ratio) * dp = logw; y w = logw*x_mask * length_Scale")
-        logger.log.info(logw.cpu().numpy())
-        np.savetxt("./logs_personalizados/tensor_logw.csv", logw.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor logw with sape {logw.cpu().numpy().shape} in tensor_logw.csv")
-        logger.log.info(w.cpu().numpy())
+        loggers.log_general.info("Salidas del (sdp_ratio) * sdp + (1-sdp_ratio) * dp = logw; y w = logw*x_mask * length_Scale")
+        loggers.log_general.info(logw.cpu().numpy())
+        np.savetxt("./logs_personalizados/tensor_logw_prueba.csv", logw.squeeze(0).cpu().numpy(), delimiter=",")
+        loggers.log_general.info(f"Saved tensor logw with sape {logw.cpu().numpy().shape} in tensor_logw.csv")
+        loggers.log_general.info(logw.cpu().numpy())
+        loggers.log_general.info(w.cpu().numpy())
         w_ceil = torch.ceil(w)
         y_lengths = torch.clamp_min(torch.sum(w_ceil, [1, 2]), 1).long()
         y_mask = torch.unsqueeze(commons.sequence_mask(y_lengths, None), 1).to(
             x_mask.dtype
         )
         attn_mask = torch.unsqueeze(x_mask, 2) * torch.unsqueeze(y_mask, -1)
+        # loggers.log_general.info("attn_mask")
+        # loggers.log_general.info(attn_mask.cpu().numpy())
+        # np.savetxt("./logs_personalizados/tensor_attn_mask_prueba.csv", attn_mask.squeeze(0).squeeze(0).cpu().numpy(), delimiter=",")
+        loggers.log_general.info("w_ceil")
+        # loggers.log_general.info(f"Saved tensor attn_mask with sape {attn_mask.cpu().numpy().shape} in tensor_attn_mask.csv")
+        loggers.log_general.info(w_ceil.cpu().numpy())
+        np.savetxt("./logs_personalizados/tensor_w_ceil_prueba.csv", w_ceil.squeeze(0).squeeze(0).cpu().numpy(), delimiter=",")
+        loggers.log_general.info(f"Saved tensor w_ceil with sape {w_ceil.cpu().numpy().shape} in tensor_w_ceil.csv")
         attn = commons.generate_path(w_ceil, attn_mask)
-        logger.log.info("attn")
-        logger.log.info(attn)
-        print(attn.cpu().numpy().shape)
-        np.savetxt("./logs_personalizados/tensor_attn.csv", attn.squeeze(0).squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor attn with sape {attn.cpu().numpy().shape} in tensor_attn.csv")
+        # loggers.log_general.info("attn")
+        # loggers.log_general.info(attn)
+        # print(attn.cpu().numpy().shape)
+        # np.savetxt("./logs_personalizados/tensor_attn_prueba.csv", attn.squeeze(0).squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor attn with sape {attn.cpu().numpy().shape} in tensor_attn.csv")
         m_p = torch.matmul(attn.squeeze(1), m_p.transpose(1, 2)).transpose(
             1, 2
         )  # [b, t', t], [b, t, d] -> [b, d, t']
@@ -1042,20 +1053,20 @@ class SynthesizerTrn(nn.Module):
         )  # [b, t', t], [b, t, d] -> [b, d, t']
 
         z_p = m_p + torch.randn_like(m_p) * torch.exp(logs_p) * noise_scale
-        logger.log.info("Entrada al flujo inverso: z_p")
-        logger.log.info(z_p)
-        np.savetxt("./logs_personalizados/tensor_z_p.csv", z_p.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor z_p with sape {z_p.cpu().numpy().shape} in tensor_z_p.csv")
+        # loggers.log_general.info("Entrada al flujo inverso: z_p")
+        # loggers.log_general.info(z_p)
+        # np.savetxt("./logs_personalizados/tensor_z_p_prueba.csv", z_p.squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor z_p with sape {z_p.cpu().numpy().shape} in tensor_z_p.csv")
         z = self.flow(z_p, y_mask, g=g, reverse=True)
-        logger.log.info("Salida del flujo inverso: z")
-        logger.log.info(z.cpu().numpy())
-        np.savetxt("./logs_personalizados/tensor_z.csv", z.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor z with sape {z.cpu().numpy().shape} in tensor_z.csv")
+        # loggers.log_general.info("Salida del flujo inverso: z")
+        # loggers.log_general.info(z.cpu().numpy())
+        # np.savetxt("./logs_personalizados/tensor_z_prueba.csv", z.squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor z with sape {z.cpu().numpy().shape} in tensor_z.csv")
         o = self.dec((z * y_mask)[:, :, :max_len], g=g)
-        logger.log.info("Salidas del dec: o")
-        logger.log.info(o.cpu().numpy())
-        np.savetxt("./logs_personalizados/tensor_o.csv", o.squeeze(0).cpu().numpy(), delimiter=",")
-        logger.log.info(f"Saved tensor o with sape {o.cpu().numpy().shape} in tensor_o.csv")
+        # loggers.log_general.info("Salidas del dec: o")
+        # loggers.log_general.info(o.cpu().numpy())
+        # np.savetxt("./logs_personalizados/tensor_o_prueba.csv", o.squeeze(0).cpu().numpy(), delimiter=",")
+        # loggers.log_general.info(f"Saved tensor o with sape {o.cpu().numpy().shape} in tensor_o.csv")
         # print('max/min of o:', o.max(), o.min())
         return o, attn, y_mask, (z, z_p, m_p, logs_p)
 
