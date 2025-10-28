@@ -128,6 +128,7 @@ class TTS(nn.Module):
             bert, ja_bert, phones, tones, lang_ids = utils.get_text_for_tts_infer(t, language, self.hps, device, self.symbol_to_id)
             with torch.no_grad():
                 x_tst = phones.to(device).unsqueeze(0)
+                # print(x_tst)
                 tones = tones.to(device).unsqueeze(0)
                 lang_ids = lang_ids.to(device).unsqueeze(0)
                 bert = bert.to(device).unsqueeze(0)
@@ -174,6 +175,7 @@ class TTS(nn.Module):
                         noise_scale_w=noise_scale_w,
                         length_scale=1. / speed,
                     )[0][0, 0].data.cpu().float().numpy()                
+                
                 del x_tst, tones, lang_ids, bert, ja_bert, x_tst_lengths, speakers
                 # 
             audio_list.append(audio)

@@ -43,8 +43,15 @@ def resample_audio(input_folders, output_folder):
 if __name__ == "__main__":
     # Lista de carpetas de entrada
     # input_folders = ["data/karen/karen/big_time_1109_librivox", "data/karen/karen/elusive_pimpernel_krs_librivox_64kb_mp3", "data/karen/karen/mansfield_park_1104_librivox"]
-    input_folders = ["data/juan/wav"]
-    output_folder = "data/juan/wavs"
+    # input_folders = ["data/example/wavs"]
+    
+    ############ spk 11###############
+    # input_folders = ["data/dataset_10/K_Savage/sky_is_falling_1003_librivox", "data/dataset_10/K_Savage/story_of_doctor_dolittle_v3_1308_librivox"]
+    # output_folder = "data/dataset_10/K_Savage/wavs"
+    
+    ############ spk 12###############
+    input_folders = ["data/dataset_10/L_Caldwell/american_history_stories_vol2_0901_librivox","data/dataset_10/L_Caldwell/awakening_of_europe_lc_librivox", "data/dataset_10/L_Caldwell/beautiful_girlhood_lc_librivox", "data/dataset_10/L_Caldwell/gods_garden_0801_librivox", "data/dataset_10/L_Caldwell/ruth_of_boston_lc_librivox", "data/dataset_10/L_Caldwell/western_united_states_lc_librivox"]
+    output_folder = "data/dataset_10/L_Caldwell/wavs"
 
     # Validar que las rutas no están vacías
     if not input_folders or not output_folder:

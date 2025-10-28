@@ -957,6 +957,7 @@ class SynthesizerTrn(nn.Module):
         z_slice, ids_slice = commons.rand_slice_segments(
             z, y_lengths, self.segment_size
         )
+        print(z_slice)
         o = self.dec(z_slice, g=g)
         return (
             o,
@@ -1013,6 +1014,7 @@ class SynthesizerTrn(nn.Module):
         # loggers.log_general.info(logs_p.cpu().numpy())
         # np.savetxt("./logs_personalizados/tensor_log_p_prueba.csv", logs_p.squeeze(0).cpu().numpy(), delimiter=",")
         # loggers.log_general.info(f"Saved tensor logs_p with sape {logs_p.cpu().numpy().shape} in tensor_logs_p.csv")
+        print(x)
         loggers.log_general.info("x_mask")
         loggers.log_general.info(x_mask.cpu().numpy())
         logw = self.sdp(x, x_mask, g=g, reverse=True, noise_scale=noise_scale_w) * (
@@ -1023,10 +1025,31 @@ class SynthesizerTrn(nn.Module):
         loggers.log_general.info(logw.cpu().numpy())
         np.savetxt("./logs_personalizados/tensor_logw_prueba.csv", logw.squeeze(0).cpu().numpy(), delimiter=",")
         loggers.log_general.info(f"Saved tensor logw with sape {logw.cpu().numpy().shape} in tensor_logw.csv")
+        print(logw)
         loggers.log_general.info(logw.cpu().numpy())
         loggers.log_general.info(w.cpu().numpy())
         w_ceil = torch.ceil(w)
+        
+        print(w_ceil.size())  # Output: torch.Size([2, 2])
+        # print(w)
+        print(w_ceil)
+        # np_array = np.array([2, 1, 1, 2, 2, 3, 3, 2, 6, 5, 3, 5, 3, 2, 3, 3, 7, 6, 4, 5, 2, 9, 11, 2, 5, 3, 2, 4, 2, 3, 3, 3, 5, 3, 2, 3, 7, 2, 6, 3, 13, 10, 4, 3, 1, 1, 1, 1, 3, 2, 2, 2, 1, 1, 1, 5, 4, 5, 2, 5, 5, 6, 7, 3, 3, 2, 2, 4, 3, 2, 2, 1, 8, 3, 8, 7, 3, 2, 4, 2, 2, 3, 2, 5, 5, 4, 5, 7, 3, 5, 3, 3, 2, 3, 3, 2, 1, 1, 3, 5, 3, 2, 4, 4, 4, 7, 5, 3, 1, 7, 8, 4, 3, 3, 4, 4, 2, 5, 4, 5, 5, 2, 2, 5, 3, 3, 3, 5, 8, 4, 5, 3, 2, 2, 2, 3, 2, 1, 2])
+        # # np_array = np.array([2, 1, 1, 2, 2, 3, 3, 11, 6, 5, 3, 5, 5, 3, 3, 7, 6, 4, 5, 2, 9, 11, 2, 5, 5, 4, 2, 3, 3, 3, 5, 3, 2, 3, 7, 2, 6, 3, 13, 10, 4, 3, 2, 2, 3, 2, 2, 2, 1, 2, 5, 4, 5, 2, 5, 5, 6, 7, 3, 3, 2, 2, 7, 2, 2, 1, 8, 3, 8, 7, 5, 4, 4, 3, 2, 5, 5, 4, 5, 7, 3, 5, 3, 3, 2, 3, 3, 2, 2, 3, 5, 3, 2, 4, 4, 4, 7, 5, 3, 1, 7, 8, 4, 3, 3, 4, 4, 2, 5, 4, 5, 5, 2, 2, 5, 3, 3, 3, 5, 8, 4, 5, 3, 2, 2, 2, 3, 3, 1, 2, 7, 7, 5, 3, 2, 5, 4, 4, 3])
+        # np_array = np_array.astype(float)/1.5
+        # # np_array = np.array([2, 1, 1, 6, 2, 3, 3, 2, 6, 5, 3, 5, 5, 3, 3, 3, 2, 6, 5, 2, 2, 2, 2, 5, 5, 4, 2, 3, 3, 3, 5, 3, 2, 3, 2, 2, 6, 3, 2, 2, 4, 3, 2, 2, 1, 2, 2, 2, 1, 2, 5, 4, 5, 2, 5, 5, 6, 2, 3, 3, 2, 2, 2, 2, 2, 1, 2, 3, 2, 2, 5, 4, 4, 3, 2, 5, 5, 4, 5, 2, 3, 5, 3, 3, 2, 3, 3, 2, 2, 3, 5, 3, 2, 4, 4, 4, 2, 5, 3, 1, 2, 2, 4, 3, 3, 4, 4, 2, 5, 4, 5, 5, 2, 2, 5, 3, 3, 3, 5, 2, 4, 5, 3, 2, 2, 2, 3, 3, 1, 2, 2, 2, 5, 3, 2, 5, 4, 4, 3])
+        # w = torch.from_numpy(np_array)
+        # w = torch.tensor(w, device='cuda:0')
+        # w_ceil = torch.ceil(w).reshape(1, 1, 139)
+        # print(w_ceil)
+        # print(w_ceil.size())  # Output: torch.Size([2, 2])
+
         y_lengths = torch.clamp_min(torch.sum(w_ceil, [1, 2]), 1).long()
+        
+        # np_array = np.array([469])
+        # a = torch.from_numpy(np_array)
+        # a = torch.tensor(a, device='cuda:0')
+        # y_lengths = torch.ceil(a).reshape(1, 1, 469)
+        
         y_mask = torch.unsqueeze(commons.sequence_mask(y_lengths, None), 1).to(
             x_mask.dtype
         )
@@ -1040,6 +1063,15 @@ class SynthesizerTrn(nn.Module):
         np.savetxt("./logs_personalizados/tensor_w_ceil_prueba.csv", w_ceil.squeeze(0).squeeze(0).cpu().numpy(), delimiter=",")
         loggers.log_general.info(f"Saved tensor w_ceil with sape {w_ceil.cpu().numpy().shape} in tensor_w_ceil.csv")
         attn = commons.generate_path(w_ceil, attn_mask)
+        np.set_printoptions(threshold=1e6)
+        
+        print(y_lengths)
+        print(y_mask.size())
+        print(x_mask.size())
+        print(attn_mask.size())
+        # print(attn_mask.cpu().numpy())
+        # print(attn.cpu().numpy())
+        print(attn.size())
         # loggers.log_general.info("attn")
         # loggers.log_general.info(attn)
         # print(attn.cpu().numpy().shape)

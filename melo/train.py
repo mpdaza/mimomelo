@@ -35,6 +35,7 @@ torch.set_float32_matmul_precision("medium")
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
+count = 0
 # logger.init()
 
 def run():
@@ -60,7 +61,8 @@ def run():
     train_loader = DataLoader(
         train_dataset,
         num_workers=8,
-        shuffle=False,
+        # shuffle=False,
+        shuffle=True,
         pin_memory=True,
         collate_fn=collate_fn,
         batch_size=hps.train.batch_size,
@@ -71,22 +73,22 @@ def run():
 
 
     # Supongamos que train_loader ya está definido y contiene un batch_sampler.
-    batch_sampler = train_loader.batch_sampler
+    # batch_sampler = train_loader.batch_sampler
 
     # Crear una lista para almacenar los índices de los lotes.
-    batch_indices = []
+    # batch_indices = []
 
     # Iterar sobre el BatchSampler para obtener los lotes.
-    for batch in batch_sampler:
-        batch_indices.append(batch)
+    # for batch in batch_sampler:
+        # batch_indices.append(batch)
 
     # Guardar los índices de los lotes en un archivo JSON.
-    with open('batch_indices.json', 'w') as f:
-        json.dump(batch_indices, f, indent=4)
+    # with open('batch_indices.json', 'w') as f:
+        # json.dump(batch_indices, f, indent=4)
 
-    print("Los índices de los lotes se han guardado en 'batch_indices.json'.")
+    # print("Los índices de los lotes se han guardado en 'batch_indices.json'.")
 
-    print(train_loader.batch_size, 'train_loader.batch_size')
+    # print(train_loader.batch_size, 'train_loader.batch_size')
     
     eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
     eval_loader = DataLoader(
@@ -100,22 +102,22 @@ def run():
     )
     
          # Supongamos que train_loader ya está definido y contiene un batch_sampler.
-    batch_sampler_eval = eval_loader.batch_sampler
+    # batch_sampler_eval = eval_loader.batch_sampler
 
     # Crear una lista para almacenar los índices de los lotes.
-    batch_indices_eval = []
+    # batch_indices_eval = []
 
     # Iterar sobre el BatchSampler para obtener los lotes.
-    for batch in batch_sampler_eval:
-        batch_indices_eval.append(batch)
+    # for batch in batch_sampler_eval:
+    #    batch_indices_eval.append(batch)
 
     # Guardar los índices de los lotes en un archivo JSON.
-    with open('batch_indices_eval.json', 'w') as f:
-        json.dump(batch_indices_eval, f, indent=4)
+    # with open('batch_indices_eval.json', 'w') as f:
+     #   json.dump(batch_indices_eval, f, indent=4)
 
-    print("Los índices de los lotes se han guardado en 'batch_indices_eval.json'.")
+    # print("Los índices de los lotes se han guardado en 'batch_indices_eval.json'.")
 
-    print(eval_loader.batch_size, 'train_loader.batch_size')
+    # print(eval_loader.batch_size, 'train_loader.batch_size')
     
     
     net_g = SynthesizerTrn(
@@ -134,16 +136,16 @@ def run():
         net_g.parameters(),
         hps.train.learning_rate,
         betas=hps.train.betas,
-        eps=hps.train.eps,
-        weight_decay= hps.train.lr_decay
+        eps=hps.train.eps
+        # weight_decay= hps.train.lr_decay
         
     )
     optim_d = torch.optim.AdamW(
         net_d.parameters(),
         hps.train.learning_rate,
         betas=hps.train.betas,
-        eps=hps.train.eps,
-        weight_decay= hps.train.lr_decay
+        eps=hps.train.eps
+        # weight_decay= hps.train.lr_decay
         
     )
     
@@ -161,8 +163,8 @@ def run():
             net_dur_disc.parameters(),
             hps.train.learning_rate,
             betas=hps.train.betas,
-            eps=hps.train.eps,
-            weight_decay= hps.train.lr_decay
+            eps=hps.train.eps
+            # weight_decay= hps.train.lr_decay
         )
 
     pretrain_G, pretrain_D, pretrain_dur = load_pretrain_model()
@@ -202,6 +204,7 @@ def run():
         epoch_str = max(epoch_str, 1)
         global_step = (epoch_str - 1) * len(train_loader)
     except:
+        print('except')
         epoch_str = 1
         global_step = 0
         
@@ -252,29 +255,29 @@ def run():
         n=epoch)
     
     
-    #def lr_lambda(epoch, warmup_epochs=3, max_lr=0.001, decay_start=3, decay_factor=0.0001):
-     #   warmup_epochs = hps.train.warmup_epochs
+    def lr_lambda(epoch, warmup_epochs=3, max_lr=0.001, decay_start=3, decay_factor=0.0001):
+        warmup_epochs = hps.train.warmup_epochs
         # Fase de calentamiento (aumenta linealmente hasta max_lr)
-      #  if epoch < warmup_epochs:
-       #     return (epoch + 1) / warmup_epochs  # Crece hasta 1.0 (100% de max_lr)
+        if epoch < warmup_epochs:
+            return (epoch + 1) / warmup_epochs  # Crece hasta 1.0 (100% de max_lr)
 
         # Fase de decaimiento suave (por ejemplo, decaimiento lineal)
-        #decay_epochs = epoch - decay_start
-        #return max(0.1, 1 - decay_epochs * decay_factor)  # Decaimiento gradual
+        decay_epochs = epoch - decay_start
+        return max(0.1, 1 - decay_epochs * decay_factor)  # Decaimiento gradual
 
  
    
 
-    # scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
-    #     optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
-    # )
-    # scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
-    #     optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
-    # )
-    # if net_dur_disc is not None:
-    #     scheduler_dur_disc = torch.optim.lr_scheduler.ExponentialLR(
-    #         optim_dur_disc, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
-    #     )
+#     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
+#         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
+#     )
+#     scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
+#         optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
+#     )
+#     if net_dur_disc is not None:
+#         scheduler_dur_disc = torch.optim.lr_scheduler.ExponentialLR(
+#             optim_dur_disc, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
+#         )
     
     scheduler_g = torch.optim.lr_scheduler.LambdaLR(optim_g, lr_lambda)
     scheduler_d = torch.optim.lr_scheduler.LambdaLR(optim_d, lr_lambda)
@@ -283,7 +286,9 @@ def run():
     
     scaler = GradScaler(enabled=hps.train.fp16_run)
 
+    # print([epoch_str,hps.train.epochs + 1])
     for epoch in range(epoch_str, hps.train.epochs + 1):
+        # print('patata'+ str(epoch))
         train_and_evaluate(
             epoch,
             hps,
@@ -314,14 +319,17 @@ def train_and_evaluate(
     print(type(loggers.log_train))
     """
     global global_step
+    global count
     # Init the loss sum like infinity
-    best_loss_sum = float('inf')  
-    best_model = None
-
+    # best_loss_sum = float('inf')  
+    # best_model = None
+    
     net_g.train()
     net_d.train()
     if net_dur_disc is not None:
         net_dur_disc.train()
+        
+    HALT = False
         
     for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, tone, language, bert, ja_bert) in enumerate(tqdm(train_loader)):
         x, x_lengths = x.cuda(non_blocking=True), x_lengths.cuda(non_blocking=True)
@@ -332,10 +340,23 @@ def train_and_evaluate(
         language = language.cuda(non_blocking=True)
         bert = bert.cuda(non_blocking=True)
         ja_bert = ja_bert.cuda(non_blocking=True)
-                               
+        
+        # if batch_idx > epoch:
+        #     print('NEXT !!!!!!')
+        #     break
+                   
+        # if epoch < 1000:
+        #     if batch_idx>2:
+        #         print('Next !!!!!!')
+        #         break
+        
+        if HALT==True:
+            HALT=False
+            break
+            
         # print(train_loader.__getitem__(batch_idx))  
-        if (x.cpu().sum()==0):
-            print('error');
+        # if (x.cpu().sum()==0):
+            # print('error');
                                
         # if '629.spec.pt' in spec_filename:
         #         print(spec_filename)
@@ -419,73 +440,91 @@ def train_and_evaluate(
                 y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw, logw_)
             with autocast(enabled=False):
                 
-                loggers.log_loss.info("EPOCH")
-                loggers.log_loss.info(epoch)
+                # loggers.log_loss.info("EPOCH")
+                # loggers.log_loss.info(epoch)
                 
                 loss_dur = torch.sum(l_length.float())
                 
-                loggers.log_loss.info("loss_dur")
-                loggers.log_loss.info(loss_dur.cpu().detach().numpy())
+                # Loss dur to compare the momentum 
+                log_dur1 = [w1.detach() - w2.detach() for w1, w2 in zip(logw, logw_)]
+                # log_dur_g = [torch.log(torch.clamp(t, min=1e-6)) for t in y_d_hat_g]
+                # log_dur_r = [torch.log(torch.clamp(t, min=1e-6)) for t in y_d_hat_r]
+
+                # Resta tensor a tensor
+#                 log_dur2 = [g - r for g, r in zip(log_dur_g, log_dur_r)]
+                
+#                 print("logw:", [t.shape for t in logw])
+#                 print("logw_:", [t.shape for t in logw_])
+#                 print("y_d_hat_g:", [t.shape for t in y_d_hat_g])
+#                 print("y_d_hat_r:", [t.shape for t in y_d_hat_r])
+
+
+                # Pérdida: suma de las L1 individuales
+                # loss_duraciones = sum(F.l1_loss(d2, d1) for d2, d1 in zip(log_dur2, log_dur1))
+                loss_duraciones = F.l1_loss(logw.detach(), logw_.detach())
+
+
+                
+                # loggers.log_loss.info("loss_dur")
+                # loggers.log_loss.info(loss_dur.cpu().detach().numpy())
                 """
                 print(y_mel.shape)
                 print(y_hat_mel.shape)
                 """
-                # loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-                loss_mel = F.l1_loss(y_mel, y_hat_mel) 
-                loggers.log_loss.info("loss_mel")
-                loggers.log_loss.info(loss_mel.cpu().detach().numpy())
+                loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+                # loss_mel = F.l1_loss(y_mel, y_hat_mel) 
+                # loggers.log_loss.info("loss_mel")
+                # loggers.log_loss.info(loss_mel.cpu().detach().numpy())
                 # loggers.log_general.info("loss_mel")
                 # loggers.log_general.info(loss_mel.detach().numpy())
                 
                 loss_spec = F.l1_loss(y_spec, y_hat_spec)
-                loggers.log_loss.info("loss_spec")
-                loggers.log_loss.info(loss_spec.cpu().detach().numpy())
+                # loggers.log_loss.info("loss_spec")
+                # loggers.log_loss.info(loss_spec.cpu().detach().numpy())
                 
-                # loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-                loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) 
+                loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+                # loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) 
                 
-                loggers.log_loss.info("z_mask")
-                loggers.log_loss.info(z_mask.cpu().detach().numpy())
+                # loggers.log_loss.info("z_mask")
+                # loggers.log_loss.info(z_mask.cpu().detach().numpy())
                
-                with open("./logs/config/z_mask.csv", "ab") as f:  # modo append en binario
-                    np.savetxt(f, z_mask.squeeze().cpu().detach().numpy(), delimiter=",")
-                    f.write(b"\n")  # añade línea vacía (en bytes)
+                # with open("./logs/config/z_mask.csv", "ab") as f:  # modo append en binario
+                #    np.savetxt(f, z_mask.squeeze().cpu().detach().numpy(), delimiter=",")
+                #    f.write(b"\n")  # añade línea vacía (en bytes)
                 
-                loggers.log_loss.info(z_mask.shape)
+                # loggers.log_loss.info(z_mask.shape)
                 
-                loggers.log_loss.info("x_mask")
-                loggers.log_loss.info(x_mask.cpu().detach().numpy())
+                # loggers.log_loss.info("x_mask")
+                # loggers.log_loss.info(x_mask.cpu().detach().numpy())
                
-                with open("./logs/config/x_mask.csv", "ab") as f:  # modo append en binario
-                    np.savetxt(f, x_mask.squeeze().cpu().detach().numpy(), delimiter=",")
-                    f.write(b"\n")  # añade línea vacía (en bytes)
+                # with open("./logs/config/x_mask.csv", "ab") as f:  # modo append en binario
+                #    np.savetxt(f, x_mask.squeeze().cpu().detach().numpy(), delimiter=",")
+                #    f.write(b"\n")  # añade línea vacía (en bytes)
 
-                loggers.log_loss.info(x_mask.shape)
+                # loggers.log_loss.info(x_mask.shape)
                     
                 # loggers.log_general.info("z_mask")
                 # loggers.log_general.info(x_mask.cpu().numpy())
                 
                 loss_fm = feature_loss(fmap_r, fmap_g)
                 
-                loggers.log_loss.info("loss_fm")
-                loggers.log_loss.info(loss_fm.cpu().detach().numpy())
+                # loggers.log_loss.info("loss_fm")
+                # loggers.log_loss.info(loss_fm.cpu().detach().numpy())
                 
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 
-                loggers.log_loss.info("loss_gen")
-                loggers.log_loss.info(loss_gen.cpu().detach().numpy())
-                for i, loss in enumerate(losses_gen):
-                    loggers.log_loss.info(f"losses_gen[{i}]")
-                    loggers.log_loss.info(loss.cpu().detach().numpy())
+                # loggers.log_loss.info("loss_gen")
+                # loggers.log_loss.info(loss_gen.cpu().detach().numpy())
+                # for i, loss in enumerate(losses_gen):
+                #    loggers.log_loss.info(f"losses_gen[{i}]")
+                #    loggers.log_loss.info(loss.cpu().detach().numpy())
                     
-#                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+                # loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+                # loss_gen_all = torch.empty()
                 
                 
-                if net_dur_disc is not None:
-                    loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
-                    # loss_gen_all += loss_dur_gen
-                    
-                def controller(losses_g, selector=[1,1,1,1,1,1], weights=[1,1,1,1,1,1]):
+                # def controller(losses_g, selector=[1,1,1,1,1,], weights=[1,1,1,1,1,1]):    
+                def controller(losses_g, selector=[1,1,1,1,1], weights=[1,1,1,1,1]):
                     """
                     losses_g: lista de tensores o listas de tensores (pérdidas)
                     selector: lista de 0/1 indicando qué pérdidas incluir (default: todos)
@@ -513,29 +552,187 @@ def train_and_evaluate(
                       
                     return loss_gen_all
                 losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
-                if epoch >= 2000:
-                    loss_gen_all = controller(losses_g, [0,0,1,1,1,1], [0,0,30,1,10,30])
-                    loggers.log_loss.info("loss_gen_all")
-                    loggers.log_loss.info(loss_gen_all)
-                    w_sum = '30*loss_mel + loss_dur + 10*loss_kl + 30*loss_spec'
-                    
-                elif epoch >=  1000:
-                    loss_gen_all = controller(losses_g, [0,0,1,1,1,1], [0,0,30,10,1,30])
-                    loggers.log_loss.info("loss_gen_all")
-                    loggers.log_loss.info(loss_gen_all)
-                    w_sum = '30*loss_mel + 10*loss_dur + loss_kl + 30*loss_mel'
+                # losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl]
                 
-                else: 
-                    loss_gen_all = controller(losses_g, [0,0,1,1,1,1], [0,0,30,1,1,30])
-                    loggers.log_loss.info("loss_gen_all")
-                    loggers.log_loss.info(loss_gen_all)
-                    w_sum = '30*loss_mel + loss_dur + loss_kl + 30*loss_mel'
+#                 if epoch >= 2000:
+#                     # loss_gen_all = controller(losses_g, [1,1,1,1,1], [10,10,1,1,1])
+#                     loss_gen_all = controller(losses_g, [1,1,1,1,1,1], [0,0,30,1,10,30])
+#                     loggers.log_loss.info("loss_gen_all")
+#                     loggers.log_loss.info(loss_gen_all)
+#                     w_sum = '30* loss_mel + loss_dur + 10*loss_kl + 30*loss_spec'
+                    
+#                 elif epoch >=  1000:
+#                 # if epoch >=  1000:
+#                     # loss_gen_all = controller(losses_g, [1,1,1,1,1], [1,30,1,1,1])
+#                     loss_gen_all = controller(losses_g, [1,1,1,1,1,1], [0,0,30,10,1,30])
+#                     loggers.log_loss.info("loss_gen_all")
+#                     loggers.log_loss.info(loss_gen_all)
+#                     # w_sum = 'loss_gen + 30*loss_fm + loss_mel + loss_dur + loss_kl'
+#                     w_sum = '30*loss_mel + 10*loss_dur + loss_kl + 30*loss_spec'
+                
+#                 else: 
+#                     # loss_gen_all = controller(losses_g, [1,1,1,1,1], [0,0,1,1,1])
+#                     loss_gen_all = controller(losses_g, [1,1,1,1,1,1], [0,0,30,1,1,30])
+#                     loggers.log_loss.info("loss_gen_all")
+#                     loggers.log_loss.info(loss_gen_all)
+#                     # w_sum = 'loss_gen + loss_fm + loss_mel + loss_dur + loss_kl'
+#                     w_sum = '30*loss_mel + loss_dur + loss_kl + 30*loss_spec'
+                    
+#                 if net_dur_disc is not None:
+#                     loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
+#                     loss_gen_all += loss_dur_gen
+#                 row = [epoch] + [l.cpu().detach().numpy() for l in losses_g] + [loss_gen_all.cpu().detach().numpy()]
+#                 # df = pd.DataFrame(data=[row], columns=['epoch', 'loss_gen', 'loss_fm', 'loss_mel', 'loss_dur', 'loss_kl', 'total'])
+#                 df = pd.DataFrame(data=[row], columns=['epoch', 'loss_gen', 'loss_fm', 'loss_mel', 'loss_dur', 'loss_kl', 'loss_sepc', 'total'])
+#                 df['w_sum'] = w_sum
+#                 df.to_csv('logs/config/logs/losses.csv', mode='a', header=not os.path.exists('logs/config/logs/losses.csv'), index=False)
+                
+                 
+            
+               
+                def momentum(loss, error_history, momentum_history, filtered_history):
+                    error_history.append(loss)
+                    # Si la posición actual es impar (índice impar)
+                    if (len(error_history) - 1) % 2 == 1:
+                        filtered_history.append(loss)
 
-                row = [epoch] + [l.cpu().detach().numpy() for l in losses_g] + [loss_gen_all.cpu().detach().numpy()]
-                df = pd.DataFrame(data=[row], columns=['epoch', 'loss_gen', 'loss_fm', 'loss_mel', 'loss_dur', 'loss_kl','loss_spec', 'total'])
+                        # Solo calculamos momentum si hay al menos 2 elementos en filtered
+                        if len(filtered_history) > 1:
+                            m = filtered_history[-1] - filtered_history[-2]
+                            momentum_history.append(float(m))
+                        else:
+                            m = 0.0
+                            momentum_history.append(float(m))
+                    return momentum_history
+
+                    
+                def evaluate_momentum(momentum, window_size=200):
+                    if len(momentum) >= window_size:
+                        recent = np.array(momentum[-window_size:])
+
+                        mean_momentum = recent.mean()
+                        std_momentum = recent.std()
+
+                        # 95% confidence interval assuming normality
+                        ci_lower = mean_momentum - 1.96 * std_momentum / np.sqrt(window_size)
+                        ci_upper = mean_momentum + 1.96 * std_momentum / np.sqrt(window_size)
+                        
+                        # 85% confidence interval assuming normality
+                        # ci_lower = mean_momentum - 1.44 * std_momentum / np.sqrt(window_size)
+                        # ci_upper = mean_momentum + 1.44 * std_momentum / np.sqrt(window_size)
+                        ci_width = ci_upper - ci_lower
+
+                        return mean_momentum, ci_width
+                    else:
+                        return 1.0, 1.0
+                
+                
+                momentum_mel = momentum(loss_mel.cpu().detach().numpy(), error_history_mel, momentum_history_mel, filtered_history_mel)
+                momentum_dur = momentum(loss_duraciones.cpu().detach().numpy(), error_history_dur, momentum_history_dur, filtered_history_dur)
+                    
+                eval_mom_loss_mel, ci_mom_loss_mel = evaluate_momentum(momentum_mel, window_size = 200)
+                eval_mom_loss_dur, ci_mom_loss_dur  = evaluate_momentum(momentum_dur, window_size = 200)
+                max_ci_width_mel = 0.04
+                max_ci_width_dur = 0.015
+                threshold_kl = 0.0
+                # epoch_restart = epoch
+                
+                
+                # if ci_mom_loss_mel < max_ci_width_mel  and ci_mom_loss_dur < max_ci_width_dur:
+                #     # LOSS MEL and LOSS DUR CONVERGED
+                #     if loss_kl > threshold_kl:
+                #         # LOSS KL CONVERGED
+                #         # loss_gen_all = loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen
+                #         count = 1
+                #         loss_gen_all = controller(losses_g,[1,1,1,1,1,1],[1,10,1,1,1,10])
+                #         w_sum = 'loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen'
+                #         # print('dentro')
+                #         # print(epoch,batch_idx)
+                #         # if (batch_idx>float('inf')):
+                #         #     HALT=True
+                #     else:
+                #         # KEEP TRYING
+                #         #loss_gen_all = 30*loss_mel +10*loss_kl + loss_dur
+                #         loss_gen_all = controller(losses_g,[0,0,1,1,1,0], [0,0,30,1,10,0])
+                #         w_sum = '30*loss_mel +10*loss_kl + loss_dur'
+                #         # print('sin kl')
+                #         # print(epoch,batch_idx)
+                #         # if (batch_idx>1):
+                #         #     HALT=True
+                # else:
+                #     # KEEP TRYING
+                #     #loss_gen_all = 30*loss_mel +10loss_dur + loss_kl
+                #     # losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
+                #     loss_gen_all = controller(losses_g,[0,0,1,1,1,0],[0,0,30,10,1,0])
+                #     w_sum = '30*loss_mel +10*loss_dur + loss_kl'
+                #     # print('fuera')
+                #     # print(epoch,batch_idx)
+                #     # if (batch_idx>1):
+                #     #     HALT=True
+            
+                
+                if count == 0:
+                    if ci_mom_loss_mel < max_ci_width_mel  and ci_mom_loss_dur < max_ci_width_dur:
+                        # LOSS MEL and LOSS DUR CONVERGED
+                        if loss_kl > threshold_kl:
+                            # LOSS KL CONVERGED
+                            # loss_gen_all = loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen
+                            count = 1
+                            loss_gen_all = controller(losses_g,[1,1,1,1,1,1],[1,10,1,1,1,10])
+                            w_sum = 'loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen'
+                            print('dentro')
+                            print(epoch,batch_idx)
+                            if (batch_idx>float('inf')):
+                                HALT=True
+                        else:
+                            # KEEP TRYING
+                            #loss_gen_all = 30*loss_mel +10*loss_kl + loss_dur
+                            loss_gen_all = controller(losses_g,[0,0,1,1,1,0], [0,0,30,1,10,0])
+                            w_sum = '30*loss_mel +10*loss_kl + loss_dur'
+                            print('sin kl')
+                            print(epoch,batch_idx)
+                            if (batch_idx>1):
+                                HALT=True
+                    else:
+                        # KEEP TRYING
+                        #loss_gen_all = 30*loss_mel +10loss_dur + loss_kl
+                        # losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
+                        loss_gen_all = controller(losses_g,[0,0,1,1,1,0],[0,0,30,10,1,0])
+                        w_sum = '30*loss_mel +10*loss_dur + loss_kl'
+                        print('fuera')
+                        print(epoch,batch_idx)
+                        if (batch_idx>1):
+                            HALT=True
+                else:
+                    if loss_kl > threshold_kl:
+                        # LOSS KL CONVERGED
+                        # loss_gen_all = loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen
+                        count = 1
+                        loss_gen_all = controller(losses_g,[1,1,1,1,1,1],[1,10,1,1,1,10])
+                        w_sum = 'loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen'
+                        print('dentro')
+                        print(epoch,batch_idx)
+                        if (batch_idx>float('inf')):
+                            HALT=True
+                    else:
+                        # KEEP TRYING
+                        #loss_gen_all = 30*loss_mel +10*loss_kl + loss_dur
+                        loss_gen_all = controller(losses_g,[0,0,1,1,1,0], [0,0,30,1,10,0])
+                        w_sum = '30*loss_mel +10*loss_kl + loss_dur'
+                        print('sin kl')
+                        print(epoch,batch_idx)
+                        if (batch_idx>1):
+                            HALT=True
+                
+            
+                if net_dur_disc is not None:
+                    loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
+                    loss_gen_all += loss_dur_gen
+                
+                row = [epoch] + [l.cpu().detach().numpy() for l in losses_g] + [loss_gen_all.cpu().detach().numpy()] + [momentum_mel] + [momentum_dur]
+                df = pd.DataFrame(data=[row], columns=['epoch', 'loss_gen', 'loss_fm', 'loss_mel', 'loss_dur', 'loss_kl','loss_spec', 'total', 'momentum_mel', 'momentum_dur'])
                 df['w_sum'] = w_sum
                 df.to_csv('logs/config/logs/losses.csv', mode='a', header=not os.path.exists('logs/config/logs/losses.csv'), index=False)
-
         
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
@@ -543,15 +740,15 @@ def train_and_evaluate(
         grad_norm_g, grads = commons.clip_grad_value_(net_g.parameters(), None)
         # print(grads)
         # print(type(grads))
-        row2 = [epoch]
-        for g in grads:
-             row2.append(g.clone().cpu().numpy())
+        # row2 = [epoch]
+        # for g in grads:
+        #     row2.append(g.clone().cpu().numpy())
         # print(row2)
-        bw = pd.DataFrame([row2])
-        bw.to_csv("logs/config/logs/backward.csv",
-                  mode="a",
-                  header=not os.path.exists("logs/config/logs/backward.csv"),
-                  index=False)
+        # bw = pd.DataFrame([row2])
+        # bw.to_csv("logs/config/logs/backward.csv",
+         #         mode="a",
+         #         header=not os.path.exists("logs/config/logs/backward.csv"),
+         #         index=False)
 
         scaler.step(optim_g)
         scaler.update()
@@ -559,6 +756,7 @@ def train_and_evaluate(
         if global_step % hps.train.log_interval == 0:
             lr = optim_g.param_groups[0]["lr"]
             losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
+            # losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl]
             loggers.log_train.info(
                 "Train Epoch: {} [{:.0f}%]".format(
                     epoch, 100.0 * batch_idx / len(train_loader)
@@ -646,13 +844,13 @@ def train_and_evaluate(
                     sort_by_time=True,
                 )
         # Save the best model
-        total_loss = loss_gen_all + loss_disc_all
-        if total_loss < best_loss_sum:
-            best_loss_sum = total_loss
-            best_model = net_g  
-            torch.save(best_model.state_dict(), "best_model.pth")
+        # total_loss = loss_gen_all + loss_disc_all
+        # if total_loss < best_loss_sum:
+            # best_loss_sum = total_loss
+            # best_model = net_g  
+            # torch.save(best_model.state_dict(), "best_model.pth")
         # Save the best model in wand after complete the epochs
-        wandb.save("best_model.pth")
+        # wandb.save("best_model.pth")
         global_step += 1
 
     loggers.log_train.info("====> Epoch: {}".format(epoch))
@@ -743,4 +941,10 @@ def evaluate(hps, generator, eval_loader, writer_eval):
 
 if __name__ == "__main__":
     loggers.init()
+    error_history_mel = []
+    momentum_history_mel = []
+    filtered_history_mel = []
+    error_history_dur = []
+    momentum_history_dur = []
+    filtered_history_dur = []
     run()

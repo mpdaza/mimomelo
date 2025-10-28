@@ -3,8 +3,11 @@ from pydub import AudioSegment
 from pydub.silence import detect_nonsilent
 
 # Ruta de las carpetas de origen y la carpeta de destino
-source_folders = ["./female_karen/big_time_1109_librivox","./female_karen/elusive_pimpernel_krs_librivox_64kb_mp3", "./female_karen/mansfield_park_1104_librivox"]
+# source_folders = ["./female_karen/big_time_1109_librivox","./female_karen/elusive_pimpernel_krs_librivox_64kb_mp3", "./female_karen/mansfield_park_1104_librivox"]
+source_folders = ["./karen/karen/big_time_1109_librivox", "./karen/karen/elusive_pimpernel_krs_librivox_64kb_mp3", "./karen/karen/mansfield_park_1104_librivox"]
 destination_folder = "./example/wavs"
+# Ruta del archivo de correlación
+log_file = os.path.join("./example/", "correlacion.txt")
 
 # source_folders = ["./cadiz", "./carlos", "./empecinado", "./gerona", "./napoleon", "./zaragoza"]
 # destination_folder = "./new_wavs"
@@ -14,7 +17,7 @@ min_duration = 10000  # 10 segundos
 max_duration = 15000  # 15 segundos
 
 # Frecuencia de muestreo en Hz
-sample_rate = 41000
+sample_rate = 44100
 
 # Contador inicial para el nombre del archivo
 file_counter = 1
@@ -59,6 +62,9 @@ def process_audio(file_path, destination_folder, file_counter):
         destination_path = os.path.join(destination_folder, file_name)
         audio_chunk.export(destination_path, format="wav")
         print(f"Archivo procesado y guardado: {destination_path}")
+         # Escribir correlación en el txt
+        with open(log_file, "a", encoding="utf-8") as log:
+            log.write(f"{file_path} -> {destination_path}\n")
 
         # Incrementa el contador y ajusta el inicio para el siguiente fragmento
         file_counter += 1
