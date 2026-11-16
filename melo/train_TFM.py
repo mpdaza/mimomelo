@@ -2,16 +2,12 @@ import os
 import torch
 import math
 import numpy as np
-import pandas as pd
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch.cuda.amp import autocast, GradScaler
 from tqdm import tqdm
 import logging
-import pdb
-import debugpy
-import json
 import wandb
 import loggers
 logging.getLogger("numba").setLevel(logging.WARNING)
@@ -26,7 +22,6 @@ from models import (
 from losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch, spectrogram_torch
 from text.symbols import symbols
-# from melo.download_utils import load_pretrain_model
 from download_utils import load_pretrain_model
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -36,20 +31,16 @@ torch.set_float32_matmul_precision("medium")
 torch.backends.cudnn.benchmark = True
 global_step = 0
 count = 0
-# logger.init()
 
 def run():
-    # Init wandb
     wand_project_melo = 'melotts-optimization'
     wandb.init(project=wand_project_melo)
-    # Registerparams and the gradient descent
     hps = utils.get_hparams()
     
     torch.manual_seed(hps.train.seed)
     
     global global_step
     
-    # logger_train = utils.get_logger(hps.model_dir)
     loggers.log_train.info("TRAIN.PY")
     loggers.log_train.info(hps)
     utils.check_git_hash(hps.model_dir)
@@ -71,24 +62,6 @@ def run():
     
 
 
-    # Supongamos que train_loader ya está definido y contiene un batch_sampler.
-    batch_sampler = train_loader.batch_sampler
-
-    # Crear una lista para almacenar los índices de los lotes.
-    batch_indices = []
-
-    # Iterar sobre el BatchSampler para obtener los lotes.
-    for batch in batch_sampler:
-        batch_indices.append(batch)
-
-    # Guardar los índices de los lotes en un archivo JSON.
-    with open('batch_indices.json', 'w') as f:
-        json.dump(batch_indices, f, indent=4)
-
-    print("Los índices de los lotes se han guardado en 'batch_indices.json'.")
-
-    print(train_loader.batch_size, 'train_loader.batch_size')
-    
     eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
     eval_loader = DataLoader(
         eval_dataset,
@@ -99,25 +72,6 @@ def run():
         drop_last=False,
         collate_fn=collate_fn,
     )
-    
-         # Supongamos que train_loader ya está definido y contiene un batch_sampler.
-    batch_sampler_eval = eval_loader.batch_sampler
-
-    # Crear una lista para almacenar los índices de los lotes.
-    batch_indices_eval = []
-
-    # Iterar sobre el BatchSampler para obtener los lotes.
-    for batch in batch_sampler_eval:
-        batch_indices_eval.append(batch)
-
-    # Guardar los índices de los lotes en un archivo JSON.
-    with open('batch_indices_eval.json', 'w') as f:
-        json.dump(batch_indices_eval, f, indent=4)
-
-    print("Los índices de los lotes se han guardado en 'batch_indices_eval.json'.")
-
-    print(eval_loader.batch_size, 'train_loader.batch_size')
-    
     
     net_g = SynthesizerTrn(
         len(symbols),
@@ -167,7 +121,6 @@ def run():
         )
 
     pretrain_G, pretrain_D, pretrain_dur = load_pretrain_model()
-    # pretrain_D, pretrain_dur = None, None
     hps.pretrain_G = hps.pretrain_G or pretrain_G
     hps.pretrain_D = hps.pretrain_D or pretrain_D
     hps.pretrain_dur = hps.pretrain_dur or pretrain_dur
@@ -241,9 +194,6 @@ def run():
         return attack_start
 
     def lr_lambda(epoch):
-        # if epoch < hps.train.warmup_epochs:
-        #     return float(epoch + 1) / float(max(1, hps.train.warmup_epochs))
-        # return max(0.0, float(hps.train.epochs - epoch) / float(max(1, hps.train.epochs - hps.train.warmup_epochs)))
         return exponential_adsr(
         attack=hps.train.warmup_epochs, # train_warmup_epochs
         decay=hps.train.epochs-hps.train.warmup_epochs, # el resto
@@ -254,29 +204,11 @@ def run():
         n=epoch)
     
     
-    #def lr_lambda(epoch, warmup_epochs=3, max_lr=0.001, decay_start=3, decay_factor=0.0001):
-     #   warmup_epochs = hps.train.warmup_epochs
-        # Fase de calentamiento (aumenta linealmente hasta max_lr)
-      #  if epoch < warmup_epochs:
-       #     return (epoch + 1) / warmup_epochs  # Crece hasta 1.0 (100% de max_lr)
 
-        # Fase de decaimiento suave (por ejemplo, decaimiento lineal)
-        #decay_epochs = epoch - decay_start
-        #return max(0.1, 1 - decay_epochs * decay_factor)  # Decaimiento gradual
 
  
    
 
-    # scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
-    #     optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
-    # )
-    # scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
-    #     optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
-    # )
-    # if net_dur_disc is not None:
-    #     scheduler_dur_disc = torch.optim.lr_scheduler.ExponentialLR(
-    #         optim_dur_disc, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
-    #     )
     
     scheduler_g = torch.optim.lr_scheduler.LambdaLR(optim_g, lr_lambda)
     scheduler_d = torch.optim.lr_scheduler.LambdaLR(optim_d, lr_lambda)
@@ -319,7 +251,6 @@ def train_and_evaluate(
     """
     global global_step
     global count
-    # Init the loss sum like infinity
     best_loss_sum = float('inf')  
     best_model = None
     
@@ -340,26 +271,15 @@ def train_and_evaluate(
         bert = bert.cuda(non_blocking=True)
         ja_bert = ja_bert.cuda(non_blocking=True)
         
-        # if batch_idx > epoch:
-        #     print('NEXT !!!!!!')
-        #     break
                    
-        # if epoch < 1000:
-        #     if batch_idx>2:
-        #         print('Next !!!!!!')
-        #         break
         
         if HALT==True:
             HALT=False
             break
             
-        # print(train_loader.__getitem__(batch_idx))  
         if (x.cpu().sum()==0):
             print('error');
                                
-        # if '629.spec.pt' in spec_filename:
-        #         print(spec_filename)
-        #         print(spec)
          
         with autocast(enabled=hps.train.fp16_run):
             y_hat, l_length, attn, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q), (hidden_x, logw, logw_) = net_g(x, x_lengths, spec, spec_lengths, speakers, tone, language, bert, ja_bert)
@@ -371,14 +291,10 @@ def train_and_evaluate(
                 hps.data.mel_fmin,
                 hps.data.mel_fmax,
             )
-            # print(f"{x}, ")
-            # print(f"x.shape: {x.shape}, idx_str: {idx_str}, idx_end: {idx_end}")
             
-            # print(mel.cpu().numpy().size)
             y_mel = commons.slice_segments(
                 mel, ids_slice, hps.train.segment_size // hps.data.hop_length
             )
-            # print(len(mel), len(ids_slice.shape), hps.train.segment_size, hps.data.hop_length)
             y_hat_mel = mel_spectrogram_torch(
                 y_hat.squeeze(1),
                 hps.data.filter_length,
@@ -405,7 +321,6 @@ def train_and_evaluate(
                 y, ids_slice * hps.data.hop_length, hps.train.segment_size
             )
 
-            # Discriminator
             y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
             with autocast(enabled=False):
                 loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
@@ -433,7 +348,6 @@ def train_and_evaluate(
         scaler.step(optim_d)
 
         with autocast(enabled=hps.train.fp16_run):
-            # Generator
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
             if net_dur_disc is not None:
                 y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw, logw_)
@@ -444,16 +358,9 @@ def train_and_evaluate(
                 
                 loss_dur = torch.sum(l_length.float())
                 
-                # Loss dur to compare the momentum 
                 log_dur1 = [w1.detach() - w2.detach() for w1, w2 in zip(logw, logw_)]
-                # log_dur_g = [torch.log(torch.clamp(t, min=1e-6)) for t in y_d_hat_g]
-                # log_dur_r = [torch.log(torch.clamp(t, min=1e-6)) for t in y_d_hat_r]
 
-                # Resta tensor a tensor
-                # log_dur2 = [g - r for g, r in zip(log_dur_g, log_dur_r)]
 
-                # Pérdida: suma de las L1 individuales
-                # loss_duraciones = sum(F.l1_loss(d2, d1) for d2, d1 in zip(log_dur2, log_dur1))
                 loss_duraciones = F.l1_loss(logw.detach(), logw_.detach())
 
 
@@ -465,39 +372,26 @@ def train_and_evaluate(
                 print(y_hat_mel.shape)
                 """
                 loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-                # loss_mel = F.l1_loss(y_mel, y_hat_mel) 
                 loggers.log_loss.info("loss_mel")
                 loggers.log_loss.info(loss_mel.cpu().detach().numpy())
-                # loggers.log_general.info("loss_mel")
-                # loggers.log_general.info(loss_mel.detach().numpy())
                 
                 loss_spec = F.l1_loss(y_spec, y_hat_spec)
                 loggers.log_loss.info("loss_spec")
                 loggers.log_loss.info(loss_spec.cpu().detach().numpy())
                 
+                # Keep the latent-space loss for the KL-driven stage transition.
                 loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-                # loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) 
                 
                 loggers.log_loss.info("z_mask")
                 loggers.log_loss.info(z_mask.cpu().detach().numpy())
                
-                with open("./logs/config/z_mask.csv", "ab") as f:  # modo append en binario
-                    np.savetxt(f, z_mask.squeeze().cpu().detach().numpy(), delimiter=",")
-                    f.write(b"\n")  # añade línea vacía (en bytes)
-                
                 loggers.log_loss.info(z_mask.shape)
                 
                 loggers.log_loss.info("x_mask")
                 loggers.log_loss.info(x_mask.cpu().detach().numpy())
                
-                with open("./logs/config/x_mask.csv", "ab") as f:  # modo append en binario
-                    np.savetxt(f, x_mask.squeeze().cpu().detach().numpy(), delimiter=",")
-                    f.write(b"\n")  # añade línea vacía (en bytes)
-
                 loggers.log_loss.info(x_mask.shape)
                     
-                # loggers.log_general.info("z_mask")
-                # loggers.log_general.info(x_mask.cpu().numpy())
                 
                 loss_fm = feature_loss(fmap_r, fmap_g)
                 
@@ -512,11 +406,8 @@ def train_and_evaluate(
                     loggers.log_loss.info(f"losses_gen[{i}]")
                     loggers.log_loss.info(loss.cpu().detach().numpy())
                     
-                # loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
-                # loss_gen_all = torch.empty()
                 
                 
-                # def controller(losses_g, selector=[1,1,1,1,1,], weights=[1,1,1,1,1,1]):    
                 def controller(losses_g, selector=[1,1,1,1,1], weights=[1,1,1,1,1]):
                     """
                     losses_g: lista de tensores o listas de tensores (pérdidas)
@@ -537,7 +428,6 @@ def train_and_evaluate(
                         if selector[i] == 1:
                             loss = losses_g[i]
 
-                            # Si loss es una lista (por ejemplo, losses_dur_gen), suma sus elementos
                             if isinstance(loss, list):
                                 loss = sum(loss)
 
@@ -545,170 +435,19 @@ def train_and_evaluate(
                       
                     return loss_gen_all
                 losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
-                # losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl]
                 
-#                 if epoch >= 2000:
-#                     loss_gen_all = controller(losses_g, [1,1,1,1,1], [10,10,1,1,1])
-#                     loggers.log_loss.info("loss_gen_all")
-#                     loggers.log_loss.info(loss_gen_all)
-#                     w_sum = '10*loss_gen + 10*loss_fm + loss_mel + loss_dur + loss_kl'
                     
-#                 elif epoch >=  1000:
-#                     loss_gen_all = controller(losses_g, [1,1,1,1,1], [1,30,1,1,1])
-#                     loggers.log_loss.info("loss_gen_all")
-#                     loggers.log_loss.info(loss_gen_all)
-#                     w_sum = 'loss_gen + 30*loss_fm + loss_mel + loss_dur + loss_kl'
                 
-#                 else: 
-#                     loss_gen_all = controller(losses_g, [1,1,1,1,1], [0,0,1,1,1])
-#                     loggers.log_loss.info("loss_gen_all")
-#                     loggers.log_loss.info(loss_gen_all)
-#                     w_sum = 'loss_gen + loss_fm + loss_mel + loss_dur + loss_kl'
                     
-#                 if net_dur_disc is not None:
-#                     loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
-#                     loss_gen_all += loss_dur_gen
-#                 row = [epoch] + [l.cpu().detach().numpy() for l in losses_g] + [loss_gen_all.cpu().detach().numpy()]
-#                 df = pd.DataFrame(data=[row], columns=['epoch', 'loss_gen', 'loss_fm', 'loss_mel', 'loss_dur', 'loss_kl', 'total'])
-#                 df['w_sum'] = w_sum
-#                 df.to_csv('logs/config/logs/losses.csv', mode='a', header=not os.path.exists('logs/config/logs/losses.csv'), index=False)
-                
-                 
-            
-               
-                def momentum(loss, error_history, momentum_history, filtered_history):
-                    error_history.append(loss)
-                    # Si la posición actual es impar (índice impar)
-                    if (len(error_history) - 1) % 2 == 1:
-                        filtered_history.append(loss)
-
-                        # Solo calculamos momentum si hay al menos 2 elementos en filtered
-                        if len(filtered_history) > 1:
-                            m = filtered_history[-1] - filtered_history[-2]
-                            momentum_history.append(float(m))
-                        else:
-                            m = 0.0
-                            momentum_history.append(float(m))
-                    return momentum_history
-
-                    
-                def evaluate_momentum(momentum, window_size=200):
-                    if len(momentum) >= window_size:
-                        recent = np.array(momentum[-window_size:])
-
-                        mean_momentum = recent.mean()
-                        std_momentum = recent.std()
-
-                        # 95% confidence interval assuming normality
-                        ci_lower = mean_momentum - 1.96 * std_momentum / np.sqrt(window_size)
-                        ci_upper = mean_momentum + 1.96 * std_momentum / np.sqrt(window_size)
-                        
-                        # 85% confidence interval assuming normality
-                        ci_lower = mean_momentum - 1.44 * std_momentum / np.sqrt(window_size)
-                        ci_upper = mean_momentum + 1.44 * std_momentum / np.sqrt(window_size)
-                        ci_width = ci_upper - ci_lower
-
-                        return mean_momentum, ci_width
-                    else:
-                        return 1.0, 1.0
-                
-                
-                momentum_mel = momentum(loss_mel.cpu().detach().numpy(), error_history_mel, momentum_history_mel, filtered_history_mel)
-                momentum_dur = momentum(loss_duraciones.cpu().detach().numpy(), error_history_dur, momentum_history_dur, filtered_history_dur)
-                    
-                eval_mom_loss_mel, ci_mom_loss_mel = evaluate_momentum(momentum_mel, window_size = 200)
-                eval_mom_loss_dur, ci_mom_loss_dur  = evaluate_momentum(momentum_dur, window_size = 200)
-                max_ci_width_mel = 0.04
-                max_ci_width_dur = 0.015
-                threshold_kl = 0.0
-                # epoch_restart = epoch
-                
-                if count == 0:
-                    if ci_mom_loss_mel < max_ci_width_mel  and ci_mom_loss_dur < max_ci_width_dur:
-                        # LOSS MEL and LOSS DUR CONVERGED
-                        if loss_kl > threshold_kl:
-                            # LOSS KL CONVERGED
-                            # loss_gen_all = loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen
-                            count = 1
-                            loss_gen_all = controller(losses_g,[1,1,1,1,1,1],[1,10,1,1,1,10])
-                            w_sum = 'loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen'
-                            print('dentro')
-                            print(epoch,batch_idx)
-                            if (batch_idx>float('inf')):
-                                HALT=True
-                        else:
-                            # KEEP TRYING
-                            #loss_gen_all = 30*loss_mel +10*loss_kl + loss_dur
-                            loss_gen_all = controller(losses_g,[0,0,1,1,1,0], [0,0,30,1,10,0])
-                            w_sum = '30*loss_mel +10*loss_kl + loss_dur'
-                            print('sin kl')
-                            print(epoch,batch_idx)
-                            if (batch_idx>1):
-                                HALT=True
-                    else:
-                        # KEEP TRYING
-                        #loss_gen_all = 30*loss_mel +10loss_dur + loss_kl
-                        # losses_g = [loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
-                        loss_gen_all = controller(losses_g,[0,0,1,1,1,0],[0,0,30,10,1,0])
-                        w_sum = '30*loss_mel +10*loss_dur + loss_kl'
-                        print('fuera')
-                        print(epoch,batch_idx)
-                        if (batch_idx>1):
-                            HALT=True
-                else:
-                    if loss_kl > threshold_kl:
-                        # LOSS KL CONVERGED
-                        # loss_gen_all = loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen
-                        count = 1
-                        loss_gen_all = controller(losses_g,[1,1,1,1,1,1],[1,10,1,1,1,10])
-                        w_sum = 'loss_mel +loss_dur + loss_kl + 10* loss_spec + 10*loss_fm + loss_gen'
-                        print('dentro')
-                        print(epoch,batch_idx)
-                        if (batch_idx>float('inf')):
-                            HALT=True
-                    else:
-                        # KEEP TRYING
-                        #loss_gen_all = 30*loss_mel +10*loss_kl + loss_dur
-                        loss_gen_all = controller(losses_g,[0,0,1,1,1,0], [0,0,30,1,10,0])
-                        w_sum = '30*loss_mel +10*loss_kl + loss_dur'
-                        print('sin kl')
-                        print(epoch,batch_idx)
-                        if (batch_idx>1):
-                            HALT=True
-                
-            
-                if net_dur_disc is not None:
-                    loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
-                    loss_gen_all += loss_dur_gen
-                
-                row = [epoch] + [l.cpu().detach().numpy() for l in losses_g] + [loss_gen_all.cpu().detach().numpy()] + [momentum_mel] + [momentum_dur]
-                df = pd.DataFrame(data=[row], columns=['epoch', 'loss_gen', 'loss_fm', 'loss_mel', 'loss_dur', 'loss_kl','loss_spec', 'total', 'momentum_mel', 'momentum_dur'])
-                df['w_sum'] = w_sum
-                df.to_csv('logs/config/logs/losses.csv', mode='a', header=not os.path.exists('logs/config/logs/losses.csv'), index=False)
-        
-        optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
-        grad_norm_g, grads = commons.clip_grad_value_(net_g.parameters(), None)
-        # print(grads)
-        # print(type(grads))
-        row2 = [epoch]
-        for g in grads:
-             row2.append(g.clone().cpu().numpy())
-        # print(row2)
-        bw = pd.DataFrame([row2])
-        bw.to_csv("logs/config/logs/backward.csv",
-                  mode="a",
-                  header=not os.path.exists("logs/config/logs/backward.csv"),
-                  index=False)
-
+        grad_norm_g, _ = commons.clip_grad_value_(net_g.parameters(), None)
         scaler.step(optim_g)
         scaler.update()
 
         if global_step % hps.train.log_interval == 0:
             lr = optim_g.param_groups[0]["lr"]
             losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl, loss_spec]
-            # losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl]
             loggers.log_train.info(
                 "Train Epoch: {} [{:.0f}%]".format(
                     epoch, 100.0 * batch_idx / len(train_loader)
@@ -795,13 +534,11 @@ def train_and_evaluate(
                     n_ckpts_to_keep=keep_ckpts,
                     sort_by_time=True,
                 )
-        # Save the best model
         total_loss = loss_gen_all + loss_disc_all
         if total_loss < best_loss_sum:
             best_loss_sum = total_loss
             best_model = net_g  
             torch.save(best_model.state_dict(), "best_model.pth")
-        # Save the best model in wand after complete the epochs
         wandb.save("best_model.pth")
         global_step += 1
 
@@ -823,7 +560,6 @@ def evaluate(hps, generator, eval_loader, writer_eval):
             ja_bert = ja_bert.cuda()
             tone = tone.cuda()
             language = language.cuda()
-            # print(language)
             for use_sdp in [True, False]:
                 y_hat, attn, mask, *_ = generator.infer(
                     x,

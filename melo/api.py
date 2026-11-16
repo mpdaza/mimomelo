@@ -146,9 +146,6 @@ class TTS(nn.Module):
                 loggers.log_general.info(ja_bert.cpu().numpy())
                 # tensor_cpu = ja_bert.cpu().numpy()  # Convertir tensor a numpy y mover a CPU
                 # print(tensor_cpu.shape)
-                np.savetxt("./logs_personalizados/tensor_ja_bert.csv", ja_bert.squeeze(0).cpu().numpy(), delimiter=",")  
-                print("Tensor ja_bert guardado en tensor_ja_bert.csv")
-                loggers.log_general.info("ja_bert (1, 768, 27) saved in tensor_ja_bert.csv")
                 loggers.log_general.info("x_tst_lengths")
                 loggers.log_general.info(x_tst_lengths.cpu().numpy())
                 loggers.log_general.info("sdp_ratio")

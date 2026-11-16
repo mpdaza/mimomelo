@@ -1,22 +1,11 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal
 
-:: Set the relative path to the config file as a parameter
-set "RELATIVE_CONFIG_PATH=data\example\config.json"
-
-:: Get the directory of the batch file
+rem Run one training session with the example configuration.
 set "SCRIPT_DIR=%~dp0"
+set "CONFIG=%SCRIPT_DIR%data\example\config.json"
+set "MODEL_NAME=example"
 
-:: Construct the full path to the config file
-set "CONFIG=%SCRIPT_DIR%%RELATIVE_CONFIG_PATH%"
-
-:: Extract the model name from the config path
-for %%F in ("%CONFIG%") do set "MODEL_NAME=%%~dpnF"
-
-:loop
-python train.py -c "%CONFIG%" -m "%MODEL_NAME%"
-for /f "tokens=2" %%a in ('tasklist ^| findstr python') do (
-    taskkill /F /PID %%a
-)
-timeout /t 30
-goto loop
+cd /d "%SCRIPT_DIR%"
+python "%SCRIPT_DIR%train.py" -c "%CONFIG%" -m "%MODEL_NAME%"
+exit /b %ERRORLEVEL%
